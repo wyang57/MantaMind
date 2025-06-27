@@ -9,13 +9,22 @@
   <h1>My Planner</h1>
   <form id="task-form">
     <input type="text" id="task" placeholder="Task or Goal" required />
-    <input type="date" id="date" required />
-    <select id="category">
-      <option value="General">General</option>
-      <option value="School">School</option>
-      <option value="Project">Project</option>
-      <option value="Personal">Personal</option>
-    </select>
+<div style="display: flex; gap: 10px;">
+  <input type="date" id="date" required />
+  <input type="time" id="time" required />
+</div>
+
+<div style="display: flex; gap: 10px;">
+  <select id="category">
+    <option value="General">General</option>
+    <option value="School">School</option>
+    <option value="Project">Project</option>
+    <option value="Personal">Personal</option>
+    <option value="custom">-- Other (type below) --</option>
+  </select>
+  <input type="text" id="custom-category" placeholder="Custom category" />
+</div>
+
     <button type="submit">Add</button>
   </form>
 

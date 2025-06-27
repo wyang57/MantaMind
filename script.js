@@ -15,7 +15,7 @@ function renderTasks() {
     li.innerHTML = `
       <div>
         <strong>${task.text}</strong><br>
-        <small>${task.date} • ${task.category}</small>
+        <small>${task.date} ${task.time} • ${task.category}</small>
       </div>
       <button class="delete" onclick="deleteTask(${index})">X</button>
     `;
@@ -32,11 +32,18 @@ function deleteTask(index) {
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = document.getElementById('task').value.trim();
-  const date = document.getElementById('date').value;
-  const category = document.getElementById('category').value;
+const date = document.getElementById('date').value;
+const time = document.getElementById('time').value;
+let category = document.getElementById('category').value;
+const customCategory = document.getElementById('custom-category').value.trim();
+
+if (category === 'custom' && customCategory) {
+  category = customCategory;
+}
+
 
   if (text && date) {
-    tasks.push({ text, date, category });
+    tasks.push({ text, date, time, category });
     saveTasks();
     renderTasks();
     form.reset();
