@@ -8,6 +8,13 @@ function saveTasks() {
 }
 
 function renderTasks() {
+  // Sort tasks by combined date and time
+  tasks.sort((a, b) => {
+    const aDate = new Date(`${a.date}T${a.time || '00:00'}`);
+    const bDate = new Date(`${b.date}T${b.time || '00:00'}`);
+    return aDate - bDate;
+  });
+
   taskList.innerHTML = '';
   tasks.forEach((task, index) => {
     const li = document.createElement('li');
@@ -17,16 +24,36 @@ function renderTasks() {
         <strong>${task.text}</strong><br>
         <small>${task.date} ${task.time} • ${task.category}</small>
       </div>
-      <button class="delete" onclick="deleteTask(${index})">X</button>
+      <div>
+        <button onclick="editTask(${index})">Edit</button>
+        <button class="delete" onclick="deleteTask(${index})">X</button>
+      </div>
     `;
     taskList.appendChild(li);
   });
 }
 
+
 function deleteTask(index) {
   tasks.splice(index, 1);
   saveTasks();
   renderTasks();
+}
+let editIndex = null; // Track if you're editing an existing task
+
+function editTask(index) {
+  const task = tasks[index];
+  document.getElementById('task').value = task.text;
+  document.getElementById('date').value = task.date;
+  document.getElementById('time').value = task.time;
+  document.getElementById('category').value = 
+    ['General', 'School', 'Project', 'Personal'].includes(task.category) ? 
+    task.category : 'custom';
+  document.getElementById('custom-category').value = 
+    ['General', 'School', 'Project', 'Personal'].includes(task.category) ? 
+    '' : task.category;
+
+  editIndex = index;
 }
 
 form.addEventListener('submit', (e) => {
@@ -43,11 +70,20 @@ if (category === 'custom' && customCategory) {
 
 
   if (text && date) {
-    tasks.push({ text, date, time, category });
-    saveTasks();
-    renderTasks();
-    form.reset();
+  const taskData = { text, date, time, category };
+
+  if (editIndex !== null) {
+    tasks[editIndex] = taskData;
+    editIndex = null;
+  } else {
+    tasks.push(taskData);
   }
+
+  saveTasks();
+  renderTasks();
+  form.reset();
+}
+
 });
 
 function getCategoryColor(category) {
