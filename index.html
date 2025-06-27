@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>My Planner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>My Planner</h1>
+  <form id="task-form">
+    <input type="text" id="task" placeholder="Task or Goal" required />
+    <input type="date" id="date" required />
+    <select id="category">
+      <option value="General">General</option>
+      <option value="School">School</option>
+      <option value="Project">Project</option>
+      <option value="Personal">Personal</option>
+    </select>
+    <button type="submit">Add</button>
+  </form>
+
+  <ul id="task-list"></ul>
+
+  <script src="script.js"></script>
+</body>
+</html>
