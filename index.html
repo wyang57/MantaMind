@@ -1,34 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>My Planner</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>MantaMind</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>My Planner</h1>
-  <form id="task-form">
-    <input type="text" id="task" placeholder="Task or Goal" required />
-<div style="display: flex; gap: 10px;">
-  <input type="date" id="date" required />
-  <input type="time" id="time" required />
-</div>
+  <h1>MantaMind: Daily Word Challenge</h1>
 
-<div style="display: flex; gap: 10px;">
-  <select id="category">
-    <option value="General">General</option>
-    <option value="School">School</option>
-    <option value="Project">Project</option>
-    <option value="Personal">Personal</option>
-    <option value="custom">-- Other (type below) --</option>
-  </select>
-  <input type="text" id="custom-category" placeholder="Custom category" />
-</div>
+  <div id="word-display"></div>
 
-    <button type="submit">Add</button>
-  </form>
+  <div id="task-container">
+    <!-- Dynamic challenge steps will load here -->
+  </div>
 
-  <ul id="task-list"></ul>
+  <button id="next-task">Start Challenge</button>
 
   <script src="script.js"></script>
 </body>

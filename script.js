@@ -1,98 +1,60 @@
-const form = document.getElementById('task-form');
-const taskList = document.getElementById('task-list');
+const challengeSteps = ['definition-match', 'fill-blank', 'choose-sentence'];
+let stepIndex = 0;
 
-let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+const wordData = {
+  word: "ubiquitous",
+  definition: "present, appearing, or found everywhere",
+  examples: [
+    "Smartphones have become ubiquitous in modern society.",
+    "She noticed the ubiquitous presence of ads."
+  ],
+  synonyms: ["omnipresent", "universal"]
+};
 
-function saveTasks() {
-  localStorage.setItem('tasks', JSON.stringify(tasks));
-}
-
-function renderTasks() {
-  // Sort tasks by combined date and time
-  tasks.sort((a, b) => {
-    const aDate = new Date(`${a.date}T${a.time || '00:00'}`);
-    const bDate = new Date(`${b.date}T${b.time || '00:00'}`);
-    return aDate - bDate;
-  });
-
-  taskList.innerHTML = '';
-  tasks.forEach((task, index) => {
-    const li = document.createElement('li');
-    li.style.borderLeftColor = getCategoryColor(task.category);
-    li.innerHTML = `
-      <div>
-        <strong>${task.text}</strong><br>
-        <small>${task.date} ${task.time} • ${task.category}</small>
-      </div>
-      <div>
-        <button onclick="editTask(${index})">Edit</button>
-        <button class="delete" onclick="deleteTask(${index})">X</button>
-      </div>
-    `;
-    taskList.appendChild(li);
-  });
-}
-
-
-function deleteTask(index) {
-  tasks.splice(index, 1);
-  saveTasks();
-  renderTasks();
-}
-let editIndex = null; // Track if you're editing an existing task
-
-function editTask(index) {
-  const task = tasks[index];
-  document.getElementById('task').value = task.text;
-  document.getElementById('date').value = task.date;
-  document.getElementById('time').value = task.time;
-  document.getElementById('category').value = 
-    ['General', 'School', 'Project', 'Personal'].includes(task.category) ? 
-    task.category : 'custom';
-  document.getElementById('custom-category').value = 
-    ['General', 'School', 'Project', 'Personal'].includes(task.category) ? 
-    '' : task.category;
-
-  editIndex = index;
-}
-
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = document.getElementById('task').value.trim();
-const date = document.getElementById('date').value;
-const time = document.getElementById('time').value;
-let category = document.getElementById('category').value;
-const customCategory = document.getElementById('custom-category').value.trim();
-
-if (category === 'custom' && customCategory) {
-  category = customCategory;
-}
-
-
-  if (text && date) {
-  const taskData = { text, date, time, category };
-
-  if (editIndex !== null) {
-    tasks[editIndex] = taskData;
-    editIndex = null;
+document.getElementById('next-task').addEventListener('click', () => {
+  if (stepIndex < challengeSteps.length) {
+    loadTask(challengeSteps[stepIndex++]);
   } else {
-    tasks.push(taskData);
+    document.getElementById('task-container').innerHTML = "<p>🎉 Challenge complete!</p>";
+    stepIndex = 0;
+    document.getElementById('next-task').textContent = "Retry Challenge";
   }
-
-  saveTasks();
-  renderTasks();
-  form.reset();
-}
-
 });
 
-function getCategoryColor(category) {
-  switch (category) {
-    case 'School': return '#007bff';
-    case 'Project': return '#28a745';
-    case 'Personal': return '#ffc107';
-    default: return '#6c757d';
+function loadTask(type) {
+  const container = document.getElementById('task-container');
+  container.innerHTML = '';
+
+  if (type === 'definition-match') {
+    container.innerHTML = `
+      <p>What does "<strong>${wordData.word}</strong>" mean?</p>
+      <button onclick="checkAnswer(true)">✅ ${wordData.definition}</button>
+      <button onclick="checkAnswer(false)">❌ Something unrelated</button>
+    `;
+  } else if (type === 'fill-blank') {
+    container.innerHTML = `
+      <p>Complete the sentence:</p>
+      <p>Smartphones have become <input type="text" id="blank-input" /> in modern society.</p>
+      <button onclick="checkFillBlank()">Submit</button>
+    `;
+  } else if (type === 'choose-sentence') {
+    container.innerHTML = `
+      <p>Which sentence uses "${wordData.word}" correctly?</p>
+      <button onclick="checkAnswer(true)">✔️ ${wordData.examples[0]}</button>
+      <button onclick="checkAnswer(false)">❌ The sky was very ubiquitous today.</button>
+    `;
   }
 }
 
-renderTasks();
+function checkAnswer(correct) {
+  alert(correct ? "✅ Correct!" : "❌ Try again!");
+}
+
+function checkFillBlank() {
+  const input = document.getElementById('blank-input').value.trim().toLowerCase();
+  if (input === wordData.word) {
+    alert("✅ Nicely done!");
+  } else {
+    alert("❌ That's not quite right.");
+  }
+}
