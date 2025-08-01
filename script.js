@@ -1,17 +1,9 @@
 let challengeStarted = false;
-
-const challengeSteps = ['definition-match', 'fill-blank', 'choose-sentence'];
 let stepIndex = 0;
 let currentStreak = 0;
 let bestStreak = 0;
 let wordIndex = 0;
-
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
+const challengeSteps = ['definition-match', 'fill-blank', 'choose-sentence'];
 
 const wordData = [
   {
@@ -143,21 +135,32 @@ const wordData = [
 ];
 
 
-const nextBtn = document.getElementById('next-task');
-nextBtn.textContent = "Continue Challenge";
-nextBtn.disabled = false;
+// ⏱️ Sync challenge state from localStorage on page load
+function syncChallengeStatus() {
+  challengeStarted = localStorage.getItem('challengeStarted') === 'true';
+  console.log("Challenge started state:", challengeStarted);
+  updateButtons();
+}
 
-nextBtn.addEventListener('click', () => {
-  if (stepIndex < challengeSteps.length) {
-    loadTask(challengeSteps[stepIndex]);
-    nextBtn.style.display = 'none'; // hide until correct answer
+
+// 🔘 Update button visibility
+function updateButtons() {
+  const startBtn = document.getElementById('start-btn');
+  const continueBtn = document.getElementById('continue-btn');
+  const giveUpBtn = document.getElementById('give-up-btn');
+
+  if (challengeStarted) {
+    startBtn.style.display = 'none';
+    continueBtn.style.display = 'inline-block';
+    giveUpBtn.style.display = 'inline-block';
   } else {
-    wordIndex = (wordIndex + 1) % wordData.length;
-    stepIndex = 0;
-    loadTask(challengeSteps[stepIndex]);
+    startBtn.style.display = 'inline-block';
+    continueBtn.style.display = 'none';
+    giveUpBtn.style.display = 'none';
   }
-});
+}
 
+// 🧩 Load vocabulary task by type
 function loadTask(type) {
   const container = document.getElementById('task-container');
   container.innerHTML = '';
@@ -171,9 +174,10 @@ function loadTask(type) {
       <button class="choice-btn" data-text="Something unrelated" onclick="handleAnswer(false, this)">Something unrelated</button>
     `;
   } else if (type === 'fill-blank') {
+    const [before, after] = currentWord.examples[0].split(currentWord.word);
     container.innerHTML = `
       <p>Complete the sentence:</p>
-      <p>${currentWord.examples[0].split(currentWord.word)[0]}<input type="text" id="blank-input" />${currentWord.examples[0].split(currentWord.word)[1]}</p>
+      <p>${before}<input type="text" id="blank-input" />${after}</p>
       <p><em>Hint: A synonym is "<strong>${synonymHint}</strong>"</em></p>
       <button onclick="checkFillBlank()">Submit</button>
     `;
@@ -186,6 +190,7 @@ function loadTask(type) {
   }
 }
 
+// ✅ Handle answer selection
 function handleAnswer(isCorrect, button) {
   document.querySelectorAll('.choice-btn').forEach(btn => {
     btn.innerHTML = btn.dataset.text;
@@ -197,12 +202,11 @@ function handleAnswer(isCorrect, button) {
 
   if (isCorrect) {
     currentStreak++;
-    if (currentStreak > bestStreak) bestStreak = currentStreak;
-
+    bestStreak = Math.max(bestStreak, currentStreak);
     document.getElementById('current-streak').textContent = currentStreak;
     document.getElementById('best-streak').textContent = bestStreak;
 
-    nextBtn.style.display = 'inline-block';
+    document.getElementById('next-task').style.display = 'inline-block';
     stepIndex++;
   } else {
     currentStreak = 0;
@@ -210,6 +214,7 @@ function handleAnswer(isCorrect, button) {
   }
 }
 
+// ✍️ Fill-in-the-blank submission
 function checkFillBlank() {
   const input = document.getElementById('blank-input').value.trim().toLowerCase();
   const currentWord = wordData[wordIndex];
@@ -218,12 +223,11 @@ function checkFillBlank() {
 
   if (isCorrect) {
     currentStreak++;
-    if (currentStreak > bestStreak) bestStreak = currentStreak;
-
+    bestStreak = Math.max(bestStreak, currentStreak);
     document.getElementById('current-streak').textContent = currentStreak;
     document.getElementById('best-streak').textContent = bestStreak;
 
-    nextBtn.style.display = 'inline-block';
+    document.getElementById('next-task').style.display = 'inline-block';
     stepIndex++;
   } else {
     currentStreak = 0;
@@ -231,6 +235,7 @@ function checkFillBlank() {
   }
 }
 
+// 🎉 Show feedback
 function showFeedback(isCorrect) {
   const feedback = document.getElementById('feedback');
   feedback.textContent = isCorrect ? "🎉 Correct!" : "❌ Try again!";
@@ -240,8 +245,39 @@ function showFeedback(isCorrect) {
   }, 2000);
 }
 
+// 🔀 Shuffle vocabulary entries
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
 shuffleArray(wordData);
 
+// ▶️ Start Challenge
+document.getElementById('start-btn').addEventListener('click', () => {
+  challengeStarted = true;
+  localStorage.setItem('challengeStarted', 'true');
+  updateButtons();
+  startChallenge();
+});
+
+// ➡️ Advance to next task
+const nextBtn = document.getElementById('next-task');
+nextBtn.textContent = "Continue Challenge";
+nextBtn.disabled = false;
+nextBtn.addEventListener('click', () => {
+  if (stepIndex < challengeSteps.length) {
+    loadTask(challengeSteps[stepIndex]);
+    nextBtn.style.display = 'none';
+  } else {
+    wordIndex = (wordIndex + 1) % wordData.length;
+    stepIndex = 0;
+    loadTask(challengeSteps[stepIndex]);
+  }
+});
+
+// 😅 Give Up logic
 document.getElementById('give-up-btn').addEventListener('click', () => {
   const currentWord = wordData[wordIndex];
   const container = document.getElementById('task-container');
@@ -252,66 +288,10 @@ document.getElementById('give-up-btn').addEventListener('click', () => {
       <p><strong>Definition:</strong> ${currentWord.definition}</p>
     </div>
   `;
-
   currentStreak = 0;
   document.getElementById('current-streak').textContent = currentStreak;
-
-  nextBtn.style.display = 'inline-block'; // allow them to continue
+  nextBtn.style.display = 'inline-block';
 });
 
-function updateButtons() {
-  const startBtn = document.getElementById('start-btn');
-  const continueBtn = document.getElementById('continue-btn');
-  const giveUpBtn = document.getElementById('give-up-btn');
-
-  if (!challengeStarted) {
-    startBtn.style.display = 'inline-block';
-    continueBtn.style.display = 'none';
-    giveUpBtn.style.display = 'none';
-  } else {
-    startBtn.style.display = 'none';
-    continueBtn.style.display = 'inline-block';
-    giveUpBtn.style.display = 'inline-block';
-  }
-}
-
-document.getElementById('start-btn').addEventListener('click', () => {
-  challengeStarted = true;
-  updateButtons();
-  startChallenge(); // or whatever logic you use to begin
-});
-
-updateButtons();
-challengeStarted = localStorage.getItem('challengeStarted') === 'true';
-
-
-window.addEventListener('DOMContentLoaded', () => {
-  updateButtons();
-});
-
-
-// Later, overwrite it with localStorage value
-challengeStarted = localStorage.getItem('challengeStarted') === 'true';
-
-localStorage.setItem('challengeStarted', 'false');
-challengeStarted = false;
-updateButtons();
-
-
-function updateButtons() {
-  // ...same as before
-}
-
-document.getElementById('start-btn').addEventListener('click', () => {
-  challengeStarted = true;
-  localStorage.setItem('challengeStarted', 'true');
-  updateButtons();
-  startChallenge();
-});
-
-function syncChallengeStatus() {
-  challengeStarted = localStorage.getItem('challengeStarted') === 'true';
-  updateButtons();
-}
-
+// 📦 DOM Ready
 window.addEventListener('DOMContentLoaded', syncChallengeStatus);
