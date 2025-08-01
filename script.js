@@ -1,3 +1,5 @@
+let challengeStarted = false;
+
 const challengeSteps = ['definition-match', 'fill-blank', 'choose-sentence'];
 let stepIndex = 0;
 let currentStreak = 0;
@@ -239,3 +241,77 @@ function showFeedback(isCorrect) {
 }
 
 shuffleArray(wordData);
+
+document.getElementById('give-up-btn').addEventListener('click', () => {
+  const currentWord = wordData[wordIndex];
+  const container = document.getElementById('task-container');
+
+  container.innerHTML += `
+    <div class="reveal-box">
+      <p><strong>Answer:</strong> ${currentWord.word}</p>
+      <p><strong>Definition:</strong> ${currentWord.definition}</p>
+    </div>
+  `;
+
+  currentStreak = 0;
+  document.getElementById('current-streak').textContent = currentStreak;
+
+  nextBtn.style.display = 'inline-block'; // allow them to continue
+});
+
+function updateButtons() {
+  const startBtn = document.getElementById('start-btn');
+  const continueBtn = document.getElementById('continue-btn');
+  const giveUpBtn = document.getElementById('give-up-btn');
+
+  if (!challengeStarted) {
+    startBtn.style.display = 'inline-block';
+    continueBtn.style.display = 'none';
+    giveUpBtn.style.display = 'none';
+  } else {
+    startBtn.style.display = 'none';
+    continueBtn.style.display = 'inline-block';
+    giveUpBtn.style.display = 'inline-block';
+  }
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  challengeStarted = true;
+  updateButtons();
+  startChallenge(); // or whatever logic you use to begin
+});
+
+updateButtons();
+challengeStarted = localStorage.getItem('challengeStarted') === 'true';
+
+
+window.addEventListener('DOMContentLoaded', () => {
+  updateButtons();
+});
+
+
+// Later, overwrite it with localStorage value
+challengeStarted = localStorage.getItem('challengeStarted') === 'true';
+
+localStorage.setItem('challengeStarted', 'false');
+challengeStarted = false;
+updateButtons();
+
+
+function updateButtons() {
+  // ...same as before
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  challengeStarted = true;
+  localStorage.setItem('challengeStarted', 'true');
+  updateButtons();
+  startChallenge();
+});
+
+function syncChallengeStatus() {
+  challengeStarted = localStorage.getItem('challengeStarted') === 'true';
+  updateButtons();
+}
+
+window.addEventListener('DOMContentLoaded', syncChallengeStatus);
