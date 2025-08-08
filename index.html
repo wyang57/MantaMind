@@ -2,64 +2,48 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MantaMind</title>
+  <title>MantaMind: Daily Word Challenge</title>
   <link rel="stylesheet" href="style.css" />
-</head>
-<div id="score-board">
-  <p>🔥 Current Streak: <span id="current-streak">0</span></p>
-  <p>🏆 Best Streak: <span id="best-streak">0</span></p>
-</div>
-<body>
-  <h1>MantaMind: Daily Word Challenge</h1>
-
-  <div id="word-display"></div>
-
-  <div id="task-container">
-    <!-- Dynamic challenge steps will load here -->
-  </div>
-
-  <button id="next-task">Start Challenge</button>
-  <button id="give-up-btn">Give Up</button>
-
-  <script src="script.js"></script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Vocabulary Challenge</title>
   <style>
-    /* Optional: style your button and feedback a bit */
-    #next-task {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
-
+    /* Optional inline styles for feedback */
     #feedback {
       font-weight: bold;
       margin-top: 10px;
       opacity: 0;
       transition: opacity 0.5s ease;
     }
+
+    #next-task {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
+  <!-- Scoreboard -->
+  <div id="score-board">
+    <p>🔥 Current Streak: <span id="current-streak">0</span></p>
+    <p>🏆 Best Streak: <span id="best-streak">0</span></p>
+  </div>
 
-  <h1></h1>
+  <!-- Title -->
+  <h1>MantaMind: Daily Word Challenge</h1>
 
-  <!-- 👇 Your challenge tasks will be loaded here -->
+  <!-- Word Display -->
+  <div id="word-display"></div>
+
+  <!-- Challenge Tasks -->
   <div id="task-container"></div>
 
-  <!-- 👇 Feedback like 'Correct!' or 'Try again!' appears here -->
+  <!-- Feedback -->
   <div id="feedback"></div>
 
-  <!-- 👇 This is the Continue/Start button -->
-  <button id="next-task" style="display: none;">Start Challenge</button>
+  <!-- Buttons -->
+  <button id="next-task">Start Challenge</button>
+  <button id="give-up-btn">Give Up</button>
 
-  <!-- 👇 Your game script goes here -->
+  <!-- Game Script -->
   <script src="script.js"></script>
-
 </body>
 </html>

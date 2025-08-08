@@ -133,6 +133,12 @@ const wordData = [
     synonyms: ["excluded", "neglected"]
   }
 ];
+function startChallenge() {
+  stepIndex = 0;
+  wordIndex = 0;
+  loadTask(challengeSteps[stepIndex]);
+  document.getElementById('next-task').style.display = 'none';
+}
 
 
 // ⏱️ Sync challenge state from localStorage on page load
@@ -143,22 +149,19 @@ function syncChallengeStatus() {
 }
 
 
-// 🔘 Update button visibility
-function updateButtons() {
-  const startBtn = document.getElementById('start-btn');
-  const continueBtn = document.getElementById('continue-btn');
-  const giveUpBtn = document.getElementById('give-up-btn');
+const nextBtn = document.getElementById('next-task');
+const giveUpBtn = document.getElementById('give-up-btn');
 
+function updateButtons() {
   if (challengeStarted) {
-    startBtn.style.display = 'none';
-    continueBtn.style.display = 'inline-block';
+    nextBtn.textContent = "Continue Challenge";
     giveUpBtn.style.display = 'inline-block';
   } else {
-    startBtn.style.display = 'inline-block';
-    continueBtn.style.display = 'none';
+    nextBtn.textContent = "Start Challenge";
     giveUpBtn.style.display = 'none';
   }
 }
+
 
 // 🧩 Load vocabulary task by type
 function loadTask(type) {
@@ -254,16 +257,26 @@ function shuffleArray(array) {
 }
 shuffleArray(wordData);
 
-// ▶️ Start Challenge
-document.getElementById('start-btn').addEventListener('click', () => {
-  challengeStarted = true;
-  localStorage.setItem('challengeStarted', 'true');
-  updateButtons();
-  startChallenge();
+nextBtn.addEventListener('click', () => {
+  if (!challengeStarted) {
+    challengeStarted = true;
+    localStorage.setItem('challengeStarted', 'true');
+    updateButtons();
+    startChallenge();
+  } else {
+    if (stepIndex < challengeSteps.length) {
+      loadTask(challengeSteps[stepIndex]);
+      nextBtn.style.display = 'none';
+    } else {
+      wordIndex = (wordIndex + 1) % wordData.length;
+      stepIndex = 0;
+      loadTask(challengeSteps[stepIndex]);
+    }
+  }
 });
 
+
 // ➡️ Advance to next task
-const nextBtn = document.getElementById('next-task');
 nextBtn.textContent = "Continue Challenge";
 nextBtn.disabled = false;
 nextBtn.addEventListener('click', () => {
