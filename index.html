@@ -5,21 +5,42 @@
   <title>MantaMind: Daily Word Challenge</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* Optional inline styles for feedback */
-    #feedback {
-      font-weight: bold;
-      margin-top: 10px;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-    }
+  #feedback {
+    font-weight: bold;
+    margin-top: 15px;
+    font-size: 1.1em;
+    padding: 10px;
+    border-radius: 6px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
 
-    #next-task {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
-  </style>
+  #feedback.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  #feedback.correct {
+    background-color: #2e7d32;
+    color: #c8e6c9;
+  }
+
+  #feedback.incorrect {
+    background-color: #c62828;
+    color: #ffebee;
+  }
+
+  #next-task {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+  }
+</style>
+
 </head>
+
+
 <body>
   <!-- Scoreboard -->
   <div id="score-board">

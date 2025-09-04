@@ -4,135 +4,30 @@ let currentStreak = 0;
 let bestStreak = 0;
 let wordIndex = 0;
 const challengeSteps = ['definition-match', 'fill-blank', 'choose-sentence'];
+const feedback = document.getElementById('feedback');
 
-const wordData = [
-  {
-    word: "expeditiously",
-    definition: "with speed and efficiency",
-    examples: [
-      "The team worked expeditiously to meet the tight deadline.",
-      "She handled the customer complaint expeditiously and professionally."
-    ],
-    synonyms: ["swiftly", "promptly"]
-  },
-  {
-    word: "deterrence",
-    definition: "the action of discouraging an action or event through instilling doubt or fear of the consequences",
-    examples: [
-      "The presence of security cameras acts as a deterrence to theft.",
-      "Nuclear deterrence has shaped global military strategy for decades."
-    ],
-    synonyms: ["discouragement", "prevention"]
-  },
-  {
-    word: "providence",
-    definition: "the protective care of God or nature as a spiritual power",
-    examples: [
-      "They saw their survival as a sign of divine providence.",
-      "Through providence, the storm passed without causing harm."
-    ],
-    synonyms: ["fate", "divine guidance"]
-  },
-  {
-    word: "tricep theory",
-    definition: "a humorous or informal concept suggesting that tricep size correlates with dominance or credibility",
-    examples: [
-      "According to tricep theory, the bigger the arms, the stronger the argument.",
-      "He jokingly invoked tricep theory to justify skipping leg day."
-    ],
-    synonyms: ["gym lore", "bro science"]
-  },
-  {
-    word: "altruism",
-    definition: "the selfless concern for the well-being of others",
-    examples: [
-      "Her altruism was evident in her volunteer work at the shelter.",
-      "True altruism expects nothing in return."
-    ],
-    synonyms: ["selflessness", "compassion"]
-  },
-  {
-    word: "totalitarianism",
-    definition: "a system of government that is centralized and dictatorial and requires complete subservience to the state",
-    examples: [
-      "The novel explores life under a totalitarianism regime.",
-      "Totalitarianism suppresses individual freedoms and dissent."
-    ],
-    synonyms: ["authoritarianism", "dictatorship"]
-  },
-  {
-    word: "negligible",
-    definition: "so small or unimportant as to be not worth considering",
-    examples: [
-      "The cost difference between the two models is negligible.",
-      "The error was negligible and didn’t affect the results."
-    ],
-    synonyms: ["trivial", "insignificant"]
-  },
-  {
-    word: "ameliorate",
-    definition: "to make something better or more tolerable",
-    examples: [
-      "The new policy aims to ameliorate working conditions.",
-      "She took steps to ameliorate the tension in the room."
-    ],
-    synonyms: ["improve", "enhance"]
-  },
-  {
-    word: "sedation",
-    definition: "the administering of a sedative drug to produce a state of calm or sleep",
-    examples: [
-      "The patient was under sedation during the procedure.",
-      "Sedation helped ease her anxiety before surgery."
-    ],
-    synonyms: ["calming", "tranquilization"]
-  },
-  {
-    word: "regurgitate",
-    definition: "to bring food or information back up, often without processing",
-    examples: [
-      "The bird regurgitates food to feed its chicks.",
-      "He regurgitated facts without understanding them."
-    ],
-    synonyms: ["vomit", "repeat"]
-  },
-  {
-    word: "precedence",
-    definition: "the condition of being considered more important than something else",
-    examples: [
-      "Safety takes precedence over speed.",
-      "In royal ceremonies, precedence is strictly observed."
-    ],
-    synonyms: ["priority", "importance"]
-  },
-  {
-    word: "consolation",
-    definition: "comfort received after a loss or disappointment",
-    examples: [
-      "Her kind words were a small consolation.",
-      "The team found consolation in their strong performance."
-    ],
-    synonyms: ["comfort", "solace"]
-  },
-  {
-    word: "usurp",
-    definition: "to take a position of power or importance illegally or by force",
-    examples: [
-      "He attempted to usurp the throne.",
-      "The new manager usurped control without proper authority."
-    ],
-    synonyms: ["seize", "overthrow"]
-  },
-  {
-    word: "omitted",
-    definition: "left out or excluded, either intentionally or by oversight",
-    examples: [
-      "Several key details were omitted from the report.",
-      "She omitted to mention her previous experience."
-    ],
-    synonyms: ["excluded", "neglected"]
-  }
-];
+
+
+//##############################################################
+
+let wordData = [];
+
+// Load wordData from data.json
+fetch('data.json')
+  .then(response => response.json())
+  .then(data => {
+    wordData = data;
+    shuffleArray(wordData);
+    // If challenge already started, reload the current task
+    if (challengeStarted) {
+      loadTask(challengeSteps[stepIndex]);
+    }
+  })
+  .catch(error => {
+    console.error('Failed to load vocabulary data:', error);
+  });
+
+//##############################################################
 function startChallenge() {
   stepIndex = 0;
   wordIndex = 0;
@@ -238,15 +133,19 @@ function checkFillBlank() {
   }
 }
 
-// 🎉 Show feedback
 function showFeedback(isCorrect) {
   const feedback = document.getElementById('feedback');
   feedback.textContent = isCorrect ? "🎉 Correct!" : "❌ Try again!";
-  feedback.style.opacity = 1;
+  feedback.classList.add('show');
+  feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
+
   setTimeout(() => {
-    feedback.style.opacity = 0;
+    feedback.classList.remove('show');
+    feedback.classList.remove('correct');
+    feedback.classList.remove('incorrect');
   }, 2000);
 }
+
 
 // 🔀 Shuffle vocabulary entries
 function shuffleArray(array) {
