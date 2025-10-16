@@ -94,3 +94,13 @@ body {
   background-color: #4caf50; /* Green */
   transition: width 0.3s ease, background-color 0.3s ease;
 }
+
+.choice-btn.correct {
+  background-color: #4caf50; /* green */
+  color: white;
+}
+
+.choice-btn.incorrect {
+  background-color: #f44336; /* red */
+  color: white;
+}

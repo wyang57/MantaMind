@@ -92,7 +92,7 @@
         })
         .catch(err => {
           console.error('❌ Failed to load data.json:', err);
-          document.getElementById('task-container').innerHTML = '<p>⚠️ Could not load word data.</p>';
+          document.getElementById('task-container').innerHTML = '<p>⚠️ Error: System not functioning</p>';
         });
 
       document.getElementById('next-task').addEventListener('click', startChallenge);
@@ -105,7 +105,7 @@
 
     function startChallenge() {
       if (wordData.length === 0) {
-        document.getElementById('task-container').innerHTML = '<p>⚠️ Word data not loaded. Cannot start challenge.</p>';
+        document.getElementById('task-container').innerHTML = '<p>⚠️ Word data not loaded. Cannot proceed.</p>';
         return;
       }
 
@@ -164,6 +164,22 @@
         <p>❓ Which word matches this definition: "<em>${wordObj.definition}</em>"</p>
         ${choices.map(word => `<button class="choice-btn">${word}</button>`).join('')}
       `;
+      document.querySelectorAll('.choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const correct = btn.textContent === wordObj.word || btn.textContent === wordObj.definition;
+
+    if (correct) {
+      btn.classList.add('correct');
+      document.getElementById('feedback').textContent = '✅ Correct!';
+      updateStreak(true);
+      disableMultipleChoice();
+    } else {
+      btn.classList.add('incorrect');
+      document.getElementById('feedback').textContent = '❌ Try again.';
+      updateStreak(false);
+    }
+  });
+});
 
       document.querySelectorAll('.choice-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -189,6 +205,22 @@
         <p>❓ What is the definition of "<strong>${wordObj.word}</strong>"?</p>
         ${choices.map(def => `<button class="choice-btn">${def}</button>`).join('')}
       `;
+      document.querySelectorAll('.choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const correct = btn.textContent === wordObj.word || btn.textContent === wordObj.definition;
+
+    if (correct) {
+      btn.classList.add('correct');
+      document.getElementById('feedback').textContent = '✅ Correct!';
+      updateStreak(true);
+      disableMultipleChoice();
+    } else {
+      btn.classList.add('incorrect');
+      document.getElementById('feedback').textContent = '❌ Try again.';
+      updateStreak(false);
+    }
+  });
+});
 
       document.querySelectorAll('.choice-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -263,7 +295,39 @@
       document.getElementById('feedback').textContent = '❌ Try again or use a hint.';
     }
   });
+  // Clean-up: removed a stray block that referenced an undefined `wordObj` at top-level.
+  // Add helpful utility functions so Give Up works and typing challenge can be disabled.
 
+  function revealAnswer() {
+    const container = document.getElementById('task-container');
+    if (!currentWord) {
+      container.innerHTML = '<p>No current word to reveal.</p>';
+      return;
+    }
+
+    const examples = Array.isArray(currentWord.examples)
+      ? currentWord.examples.map(e => `<li>${e}</li>`).join('')
+      : '';
+
+    container.innerHTML = `
+      <div class="reveal-box">
+        <p><strong>Answer:</strong> ${currentWord.word}</p>
+        <p><strong>Definition:</strong> ${currentWord.definition}</p>
+        ${examples ? `<p><strong>Examples:</strong></p><ul>${examples}</ul>` : ''}
+      </div>
+    `;
+
+    // Mark as a failed attempt for streak purposes
+    updateStreak(false);
+    document.getElementById('give-up-btn').style.display = 'none';
+  }
+
+  function disableTypingChallenge() {
+    const input = document.getElementById('type-input');
+    const btn = document.getElementById('submit-type');
+    if (input) input.disabled = true;
+    if (btn) btn.disabled = true;
+  }
 </script>
 </body>
 </html>
