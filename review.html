@@ -19,9 +19,12 @@
   <!-- Sidebar Menu -->
   <nav id="sidebar-menu" class="hidden">
     <ul>
-      <li><a href="index.html">🏠 Home</a></li>
+      <li><a href="welcome.html">👋 Home</a></li>
+      <li><a href="index.html">� Challenge</a></li>
+      <li><a href="profile.html">👤 Profile</a></li>
       <li><a href="dashboard.html">📊 Dashboard</a></li>
       <li><a href="review.html">📚 Review Words</a></li>
+      <li><a href="wordlist.html">📖 Word List</a></li>
       <li><a href="settings.html">⚙️ Settings</a></li>
       <li><a href="#" id="logout-btn">🚪 Logout</a></li>
     </ul>
@@ -48,23 +51,35 @@
     document.getElementById('logout-btn').addEventListener('click', () => {
       localStorage.removeItem('currentUser');
       localStorage.removeItem('userData');
-      location.href = 'index.html';
+      location.href = 'login.html';
     });
 
     // 📚 Review Logic
-    const currentUser = localStorage.getItem('currentUser');
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    const allWords = JSON.parse(localStorage.getItem('wordData') || '[]');
+    document.addEventListener('DOMContentLoaded', async () => {
+      const currentUser = localStorage.getItem('currentUser');
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
 
-    if (!currentUser || !userData[currentUser]) {
-      document.body.innerHTML = "<h2 style='text-align:center;'>Please log in first.</h2>";
-    } else {
+      if (!currentUser || !userData[currentUser]) {
+        document.body.innerHTML = "<h2 style='text-align:center; margin-top: 50px;'>Please log in first.</h2>";
+        return;
+      }
+
       const user = userData[currentUser];
-      const reviewWords = [...user.learnedWords, ...user.inProgressWords];
+      const reviewWords = [...(user.learnedWords || []), ...(user.inProgressWords || [])];
       let reviewIndex = 0;
 
       const reviewWordEl = document.getElementById('review-word');
       const definitionBox = document.getElementById('definition-box');
+
+      // Load word data
+      let allWords = [];
+      try {
+        const response = await fetch('./data.json');
+        const data = await response.json();
+        allWords = Array.isArray(data) ? data : data.words || [];
+      } catch (error) {
+        console.error('Failed to load word data:', error);
+      }
 
       function showWord() {
         if (reviewWords.length === 0) {
@@ -84,7 +99,11 @@
         const word = reviewWords[reviewIndex];
         const entry = allWords.find(w => w.word === word);
         if (entry) {
-          definitionBox.textContent = entry.definition;
+          definitionBox.innerHTML = `
+            <p><strong>Definition:</strong> ${entry.definition}</p>
+            ${entry.examples ? `<p><strong>Example:</strong> ${entry.examples[0]}</p>` : ''}
+            ${entry.synonyms ? `<p><strong>Synonyms:</strong> ${entry.synonyms.join(', ')}</p>` : ''}
+          `;
           definitionBox.style.display = 'block';
         } else {
           definitionBox.textContent = "Definition not found.";
@@ -101,7 +120,7 @@
       document.getElementById('next-word').addEventListener('click', nextWord);
 
       showWord();
-    }
+    });
   </script>
 </body>
 </html>

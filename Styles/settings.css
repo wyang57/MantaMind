@@ -8,6 +8,45 @@ main.game-container {
   text-align: center;
 }
 
+.question-type-settings {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.question-type-settings h3 {
+  color: #c3f0ff;
+  margin-bottom: 10px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(77,184,214,0.12);
+}
+
+.setting-row label {
+  color: #c3f0ff;
+}
+
+.hint {
+  color: #a0d5e8;
+  font-size: 0.9em;
+  margin-top: 8px;
+}
+
+.primary {
+  background-color: #00d4ff;
+  color: #001a33;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.primary:hover { background-color: #00b8e6; }
+
 button {
   margin: 10px;
   padding: 10px 20px;

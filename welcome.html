@@ -18,11 +18,13 @@
   <!-- Sidebar Menu -->
   <nav id="sidebar-menu" class="hidden">
     <ul>
-      <li><a href="welcome.html">👋 Welcome</a></li>
-      <li><a href="login.html">🔐 Login</a></li>
-      <li><a href="dashboard.html">📊 Dashboard</a></li>
-      <li><a href="review.html">📚 Review</a></li>
+      <li><a href="welcome.html">👋 Home</a></li>
+      <li><a href="index.html">🎮 Challenge</a></li>
+      <li><a href="profile.html">👤 Profile</a></li>
+      <li><a href="matching.html">🧩 Matching</a></li>
+      <li><a href="wordlist.html">📖 Word List</a></li>
       <li><a href="settings.html">⚙️ Settings</a></li>
+      <li><a href="#" id="logout-btn">🚪 Logout</a></li>
     </ul>
   </nav>
 
@@ -30,19 +32,24 @@
   <main id="welcome-section">
     <h1>Welcome to MantaMind</h1>
     <p>Build your vocabulary. Track your progress. Challenge yourself daily.</p>
-    <button onclick="location.href='login.html'">Get Started</button>
+    <button id="welcome-cta">Get Started</button>
+    <p id="signed-in" style="margin-top:8px;color:#c3f0ff;"></p>
   </main>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const burgerBtn = document.getElementById('burger-btn');
-      const sidebarMenu = document.getElementById('sidebar-menu');
-      if (burgerBtn && sidebarMenu) {
-        burgerBtn.addEventListener('click', () => {
-          sidebarMenu.classList.toggle('hidden');
-        });
-      }
-    });
+    // Modify welcome CTA if user already signed in
+    const cta = document.getElementById('welcome-cta');
+    const signedIn = document.getElementById('signed-in');
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+      cta.textContent = 'Continue to Challenge';
+      cta.addEventListener('click', () => { location.href = 'index.html'; });
+      signedIn.textContent = `Signed in as ${currentUser}.`;
+    } else {
+      cta.textContent = 'Get Started';
+      cta.addEventListener('click', () => { location.href = 'login.html'; });
+    }
   </script>
+  <script src="nav.js"></script>
 </body>
 </html>

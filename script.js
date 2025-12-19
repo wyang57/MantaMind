@@ -1,4 +1,3 @@
-
 // Global state
 let challengeStarted = false;
 let stepIndex = 0;
@@ -6,9 +5,9 @@ let wordIndex = 0;
 let currentUser = null;
 let userData = {};
 let wordData = [];
-let currentWord = null; // added global so multiple parts of the app can reference it
+let currentWord = null;
 
-const challengeSteps = ['definition-match', 'fill-blank', 'choose-sentence'];
+const challengeSteps = ['definition-match', 'choose-sentence'];
 
 // ============================================
 // INITIALIZATION
@@ -30,32 +29,28 @@ function revealAnswer() {
   const nextBtn = document.getElementById('next-task');
   if (nextBtn) nextBtn.textContent = 'Next Task';
 
-  updateStreak(false);
+  updateProgress(false, currentWord.word);
 
   disableTypingChallenge();
-  disableMultipleChoice(); // Optional: if using multiple choice
+  disableMultipleChoice();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Authentication & User Data
   loadUserData();
   setupAuthToggle();
   if (window.location.pathname.includes('index.html')) {
     redirectIfNotLoggedIn();
   }
 
-  document.getElementById('give-up-btn').addEventListener('click', revealAnswer);
+  const giveUpButton = document.getElementById('give-up-btn');
+  if (giveUpButton) {
+    giveUpButton.addEventListener('click', revealAnswer);
+  }
 
-  // UI Setup
-  setupBurgerMenu();
-  setupLogout();
-
-  // Challenge Logic
   loadWordData();
   syncChallengeStatus();
   setupChallengeButtons();
 
-  // Hint listener
   const hintBtn = document.getElementById('hint-btn');
   if (hintBtn) {
     hintBtn.addEventListener('click', () => {
@@ -71,15 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-
-
-
 // ============================================
 // DATA LOADING
 // ============================================
-// consolidated loadWordData: tries relative paths, populates word-list, shuffles, and optionally starts challenge
 function loadWordData() {
-  // Try relative paths so browsers can fetch the file when served by a local server / hosted
   const relativePaths = ['./data.json', './data/data.json', '/data.json'];
 
   const tryFetch = (index) => {
@@ -100,43 +90,27 @@ function loadWordData() {
         return response.json();
       })
       .then(data => {
-        // support both formats: array or { words: [...] }
         wordData = Array.isArray(data) ? data : data.words || [];
         if (!Array.isArray(wordData)) wordData = [];
         shuffleArray(wordData);
         console.log('✅ Loaded', wordData.length, 'words from', path);
 
-        // Display all words in the list (if exists)
-        const wordListEl = document.getElementById('word-list');
-        if (wordListEl) {
-          wordListEl.innerHTML = ''; // Clear existing content
-          wordData.forEach(entry => {
-            const li = document.createElement('li');
-            li.innerHTML = `<strong>${entry.word}</strong>: ${entry.definition}`;
-            wordListEl.appendChild(li);
-          });
-        }
-
-        // If the page is reloaded mid-challenge, load the current task
         if (challengeStarted) {
           loadTask(challengeSteps[stepIndex]);
         }
 
-        // Optional: start challenge automatically if challengeStarted flag is true
-        if (challengeStarted && (!currentWord || !document.getElementById('task-container').innerHTML.trim())) {
+        if (challengeStarted && (!currentWord || !document.getElementById('task-container')?.innerHTML.trim())) {
           startChallenge();
         }
       })
       .catch(err => {
         console.warn(`Failed to load ${path}:`, err);
-        // try next candidate
         tryFetch(index + 1);
       });
   };
 
   tryFetch(0);
 }
-
 
 function loadUserData() {
   const savedUser = localStorage.getItem('currentUser');
@@ -145,6 +119,13 @@ function loadUserData() {
   if (savedUser && savedUserData) {
     currentUser = savedUser;
     userData = JSON.parse(savedUserData);
+    
+    // Initialize wordStreaks if it doesn't exist
+    if (userData[currentUser] && !userData[currentUser].wordStreaks) {
+      userData[currentUser].wordStreaks = {};
+      localStorage.setItem('userData', JSON.stringify(userData));
+    }
+    
     loadUserStreaks();
   }
 }
@@ -153,62 +134,45 @@ function loadUserStreaks() {
   if (!currentUser || !userData[currentUser]) return;
 
   const user = userData[currentUser];
-  document.getElementById('current-streak').textContent = user.currentStreak || 0;
-  document.getElementById('best-streak').textContent = user.bestStreak || 0;
+  const currentStreakEl = document.getElementById('current-streak');
+  const bestStreakEl = document.getElementById('best-streak');
+  
+  if (currentStreakEl) currentStreakEl.textContent = user.currentStreak || 0;
+  if (bestStreakEl) bestStreakEl.textContent = user.bestStreak || 0;
+  
+  // Update progress bar on load
+  updateProgressBar();
 }
-
 
 // ============================================
 // UI & NAVIGATION SETUP
 // ============================================
-function setupBurgerMenu() {
-  const burger = document.getElementById('burger-btn');
-  const sidebar = document.getElementById('sidebar-menu');
-  if (burger && sidebar) {
-    burger.addEventListener('click', () => {
-      sidebar.classList.toggle('hidden');
-    });
-  }
-}
-
-function setupLogout() {
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('challengeStarted'); // Clear challenge state on logout
-      window.location.href = 'login.html';
-    });
-  }
-}
-
 function setupChallengeButtons() {
-    const nextBtn = document.getElementById('next-task');
-    const giveUpBtn = document.getElementById('give-up-btn');
+  const nextBtn = document.getElementById('next-task');
+  const giveUpBtn = document.getElementById('give-up-btn');
 
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            if (!challengeStarted) {
-                startChallenge();
-            } else {
-                advanceToNextTask();
-            }
-        });
-    }
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      if (!challengeStarted) {
+        startChallenge();
+      } else {
+        advanceToNextTask();
+      }
+    });
+  }
 
-    if(giveUpBtn) {
-        giveUpBtn.addEventListener('click', () => {
-            const cw = currentWord || wordData[wordIndex];
-            if (!cw) return;
-            showCorrectAnswer(cw.word, cw.definition);
-            updateProgress(false, cw.word);
-            const nextBtnEl = document.getElementById('next-task');
-            if (nextBtnEl) nextBtnEl.style.display = 'inline-block';
-            
-            // Disable any interactive elements
-            document.querySelectorAll('.choice-btn, #blank-input').forEach(el => el.disabled = true);
-        });
-    }
+  if (giveUpBtn) {
+    giveUpBtn.addEventListener('click', () => {
+      const cw = currentWord || wordData[wordIndex];
+      if (!cw) return;
+      showCorrectAnswer(cw.word, cw.definition);
+      updateProgress(false, cw.word);
+      const nextBtnEl = document.getElementById('next-task');
+      if (nextBtnEl) nextBtnEl.style.display = 'inline-block';
+
+      document.querySelectorAll('.choice-btn, #blank-input').forEach(el => el.disabled = true);
+    });
+  }
 }
 
 function redirectIfNotLoggedIn() {
@@ -218,13 +182,11 @@ function redirectIfNotLoggedIn() {
   }
 }
 
-
 // ============================================
 // CHALLENGE CONTROL
 // ============================================
 function syncChallengeStatus() {
   challengeStarted = localStorage.getItem('challengeStarted') === 'true';
-  // Retrieve step and word indices if they exist
   stepIndex = parseInt(localStorage.getItem('stepIndex') || '0', 10);
   wordIndex = parseInt(localStorage.getItem('wordIndex') || '0', 10);
   updateButtonsUI();
@@ -257,41 +219,71 @@ function startChallenge() {
   challengeStarted = true;
   localStorage.setItem('challengeStarted', 'true');
 
-  // choose a random word for the first (or current) task
   currentWord = wordData[Math.floor(Math.random() * wordData.length)];
-  const format = ['multiple-definition', 'multiple-word', 'fill', 'typing'][Math.floor(Math.random() * 4)];
 
-  document.getElementById('give-up-btn').style.display = 'inline-block';
+  // Determine enabled formats based on per-user settings
+  const enabledFormats = [];
+  try {
+    const userSettings = getUserSettings();
+    if (userSettings.multipleChoice) {
+      enabledFormats.push('multiple-definition', 'multiple-word', 'choose-sentence');
+    }
+    if (userSettings.fillBlank) enabledFormats.push('fill');
+    if (userSettings.matching) enabledFormats.push('matching');
+  } catch (e) {
+    // fallback: if something goes wrong, enable all
+    enabledFormats.push('multiple-definition', 'multiple-word', 'fill', 'choose-sentence');
+  }
+
+  if (!enabledFormats || enabledFormats.length === 0) {
+    alert('No question types enabled in settings. Please enable at least one type in Settings.');
+    return;
+  }
+
+  const format = enabledFormats[Math.floor(Math.random() * enabledFormats.length)];
+
+  const giveUpBtn = document.getElementById('give-up-btn');
+  if (giveUpBtn) giveUpBtn.style.display = 'inline-block';
+
   const nextTaskBtn = document.getElementById('next-task');
   if (nextTaskBtn) nextTaskBtn.textContent = 'Next Task';
+
   const feedbackEl = document.getElementById('feedback');
   if (feedbackEl) feedbackEl.textContent = '';
+
   const hintBtnEl = document.getElementById('hint-btn');
-  if (hintBtnEl) hintBtnEl.style.display = 'inline-block'; // ✅ Always show hint when challenge starts
+  if (hintBtnEl) hintBtnEl.style.display = 'inline-block';
 
   if (format === 'multiple-definition') showMultipleChoiceDefinition(currentWord);
   else if (format === 'multiple-word') showMultipleChoiceWord(currentWord);
   else if (format === 'fill') showFillInBlank(currentWord);
+  else if (format === 'matching') showMatchingQuestion();
   else showTypingChallenge(currentWord);
 }
 
+// Return current user settings (with defaults)
+function getUserSettings() {
+  const currentUser = localStorage.getItem('currentUser');
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const defaults = { multipleChoice: true, fillBlank: false, matching: false };
+  if (!currentUser || !userData[currentUser] || !userData[currentUser].settings) return defaults;
+  return Object.assign({}, defaults, userData[currentUser].settings);
+}
 
 function advanceToNextTask() {
-    stepIndex++;
+  stepIndex++;
 
-    if (stepIndex >= challengeSteps.length) {
-        // Move to the next word and reset steps
-        stepIndex = 0;
-        wordIndex = (wordIndex + 1) % wordData.length;
-    }
-    
-    // Save progress
-    localStorage.setItem('stepIndex', stepIndex);
-    localStorage.setItem('wordIndex', wordIndex);
+  if (stepIndex >= challengeSteps.length) {
+    stepIndex = 0;
+    wordIndex = (wordIndex + 1) % wordData.length;
+  }
 
-    loadTask(challengeSteps[stepIndex]);
-    const nextBtn = document.getElementById('next-task');
-    if (nextBtn) nextBtn.style.display = 'none';
+  localStorage.setItem('stepIndex', stepIndex);
+  localStorage.setItem('wordIndex', wordIndex);
+
+  loadTask(challengeSteps[stepIndex]);
+  const nextBtn = document.getElementById('next-task');
+  if (nextBtn) nextBtn.style.display = 'none';
 }
 
 // ============================================
@@ -308,36 +300,33 @@ function loadTask(type) {
   }
 
   const cw = wordData[wordIndex];
-  
-  // Basic safety check
+
   if (!cw) {
-      console.error(`Invalid wordIndex: ${wordIndex}`);
-      container.innerHTML = '<p>⚠️ Error: Could not find the current word.</p>';
-      return;
+    console.error(`Invalid wordIndex: ${wordIndex}`);
+    container.innerHTML = '<p>⚠️ Error: Could not find the current word.</p>';
+    return;
   }
 
-  // ensure global currentWord is in sync if using loadTask alone
   currentWord = cw;
 
   const synonymHint = cw.synonyms ? cw.synonyms[Math.floor(Math.random() * cw.synonyms.length)] : 'No synonym available';
 
   if (type === 'definition-match') {
-    // Get a random wrong definition from a *different* word
     let randomWord;
     do {
       randomWord = wordData[Math.floor(Math.random() * wordData.length)];
     } while (randomWord.word === cw.word);
-    
-    const options = [
-        { text: cw.definition, correct: true },
-        { text: randomWord.definition, correct: false }
-    ];
-    shuffleArray(options); // Randomize button order
+
+    // Build up to 4 choices (1 correct + up to 3 distractors)
+    const pool = wordData.filter(w => w.word !== cw.word && w.definition);
+    shuffleArray(pool);
+    const distractors = pool.slice(0, 3).map(w => w.definition);
+    const options = [{ text: cw.definition, correct: true }, ...distractors.map(d => ({ text: d, correct: false }))];
+    shuffleArray(options);
 
     container.innerHTML = `
       <p>What does "<strong>${cw.word}</strong>" mean?</p>
-      <button class="choice-btn" onclick="handleMultipleChoice(${options[0].correct}, this, '${cw.word}', '${cw.definition}')">${options[0].text}</button>
-      <button class="choice-btn" onclick="handleMultipleChoice(${options[1].correct}, this, '${cw.word}', '${cw.definition}')">${options[1].text}</button>
+      ${options.map((opt) => `<button class="choice-btn" onclick="handleMultipleChoice(${opt.correct}, this, '${cw.word}', '${cw.definition.replace(/'/g, "\\'")}')">${opt.text}</button>`).join('')}
     `;
 
   } else if (type === 'fill-blank') {
@@ -353,24 +342,30 @@ function loadTask(type) {
     `;
 
   } else if (type === 'choose-sentence') {
-    // A more plausible wrong sentence
-    const wrongSentence = `The delicious pizza was very ${cw.word}.`; 
-    
-    const options = [
-        { text: cw.examples && cw.examples[0] ? cw.examples[0] : '', correct: true },
-        { text: wrongSentence, correct: false }
-    ];
-    shuffleArray(options); // Randomize button order
+    // 4 sentence options: 1 correct example + up to 3 distractor sentences
+    const correctSentence = cw.examples && cw.examples[0] ? cw.examples[0] : '';
+    const pool = wordData.filter(w => w.word !== cw.word);
+    shuffleArray(pool);
+    const distractSentences = pool.slice(0, 3).map(w => `The delicious pizza was very ${w.word}.`);
+    const options = [{ text: correctSentence, correct: true }, ...distractSentences.map(s => ({ text: s, correct: false }))];
+    shuffleArray(options);
 
     container.innerHTML = `
       <p>Which sentence uses "<strong>${cw.word}</strong>" correctly?</p>
-      <button class="choice-btn" onclick="handleMultipleChoice(${options[0].correct}, this, '${cw.word}', '${cw.definition}')">${options[0].text}</button>
-      <button class="choice-btn" onclick="handleMultipleChoice(${options[1].correct}, this, '${cw.word}', '${cw.definition}')">${options[1].text}</button>
+      ${options.map(opt => `<button class="choice-btn" onclick="handleMultipleChoice(${opt.correct}, this, '${cw.word}', '${cw.definition}')">${opt.text}</button>`).join('')}
     `;
   } else {
-    // fallback: show a simple definition match if type is unexpected
     container.innerHTML = `<p>Unknown task type. Showing definition for <strong>${cw.word}</strong>:</p><p>${cw.definition}</p>`;
   }
+
+  // ENSURE BUTTONS ARE ALWAYS SHOWN
+  const hintBtn = document.getElementById('hint-btn');
+  const giveUpBtn = document.getElementById('give-up-btn');
+  const nextBtn = document.getElementById('next-task');
+  
+  if (hintBtn) hintBtn.style.display = 'inline-block';
+  if (giveUpBtn) giveUpBtn.style.display = 'inline-block';
+  if (nextBtn) nextBtn.style.display = 'none';
 }
 
 function handleMultipleChoice(isCorrect, button, word, definition) {
@@ -422,7 +417,6 @@ function showCorrectAnswer(word, definition) {
   container.appendChild(revealBox);
 }
 
-
 function showFeedback(isCorrect) {
   const feedback = document.getElementById('feedback');
   if (!feedback) return;
@@ -434,133 +428,178 @@ function showFeedback(isCorrect) {
   }, 3000);
 }
 
-
 // ============================================
-// PROGRESS TRACKING
+// PROGRESS TRACKING WITH WORD-LEVEL STREAKS
 // ============================================
 function updateProgress(isCorrect, word) {
   if (!currentUser || !userData[currentUser]) return;
 
   const user = userData[currentUser];
 
-  // Initialize structures if they don't exist
+  // Initialize structures
   user.learnedWords = user.learnedWords || [];
   user.inProgressWords = user.inProgressWords || [];
-  user.wordProgress = user.wordProgress || {};
+  user.wordStreaks = user.wordStreaks || {};
   user.currentStreak = user.currentStreak || 0;
   user.bestStreak = user.bestStreak || 0;
-  user.wordProgress[word] = user.wordProgress[word] || 0;
+
+  if (!user.wordStreaks[word]) {
+    user.wordStreaks[word] = 0;
+  }
 
   if (isCorrect) {
-    user.wordProgress[word]++;
+    // Increment word-specific streak
+    user.wordStreaks[word]++;
+
+    // Increment global streak
     user.currentStreak++;
     if (user.currentStreak > user.bestStreak) {
       user.bestStreak = user.currentStreak;
     }
 
-    if (user.wordProgress[word] >= 3 && !user.learnedWords.includes(word)) {
+    // Mark as learned if word streak reaches 3
+    if (user.wordStreaks[word] >= 3 && !user.learnedWords.includes(word)) {
       user.learnedWords.push(word);
       user.inProgressWords = user.inProgressWords.filter(w => w !== word);
+      console.log(`🎉 "${word}" marked as learned! (Streak: ${user.wordStreaks[word]})`);
     } else if (!user.inProgressWords.includes(word) && !user.learnedWords.includes(word)) {
       user.inProgressWords.push(word);
     }
-  } else {
-    user.currentStreak = 0;
-    user.wordProgress[word] = 0;
 
+  } else {
+    // Reset word-specific streak on incorrect answer
+    user.wordStreaks[word] = 0;
+
+    // Reset global streak
+    user.currentStreak = 0;
+
+    // If word was learned, move it back to in-progress
     if (user.learnedWords.includes(word)) {
       user.learnedWords = user.learnedWords.filter(w => w !== word);
-      user.inProgressWords.push(word);
+      if (!user.inProgressWords.includes(word)) {
+        user.inProgressWords.push(word);
+      }
+      console.log(`⚠️ "${word}" moved back to in-progress (streak reset)`);
     } else if (!user.inProgressWords.includes(word)) {
       user.inProgressWords.push(word);
     }
   }
 
+  // Update UI
   const currentStreakEl = document.getElementById('current-streak');
   const bestStreakEl = document.getElementById('best-streak');
   if (currentStreakEl) currentStreakEl.textContent = user.currentStreak;
   if (bestStreakEl) bestStreakEl.textContent = user.bestStreak;
 
+  // Update progress bar
+  updateProgressBar();
+
+  // Save to localStorage
   localStorage.setItem('userData', JSON.stringify(userData));
+
+  console.log(`Word "${word}" streak: ${user.wordStreaks[word]}/3`);
+}
+
+function updateProgressBar() {
+  if (!currentUser || !userData[currentUser]) return;
+
+  const user = userData[currentUser];
+  const streak = user.currentStreak || 0;
+  const maxStreak = 10; // fill bar at 10 in a row
+  const percentage = Math.min(Math.round((streak / maxStreak) * 100), 100);
+
+  const progressBar = document.getElementById('completion-bar');
+  if (progressBar) {
+    progressBar.style.width = percentage + '%';
+    progressBar.textContent = percentage + '%';
+  }
+
+  const profileBar = document.getElementById('progress-bar');
+  if (profileBar) {
+    profileBar.style.width = percentage + '%';
+    profileBar.textContent = percentage + '%';
+  }
 }
 
 
 // ============================================
-// AUTH SYSTEM (for login.html)
+// AUTH SYSTEM
 // ============================================
 function setupAuthToggle() {
-    const authForm = document.getElementById('auth-form');
-    const switchLink = document.getElementById('switch-mode');
-    if (!authForm) return; // Only run on login page
+  const authForm = document.getElementById('auth-form');
+  const switchLink = document.getElementById('switch-mode');
+  if (!authForm) return;
 
-    const toggle = (isSigningUp) => {
-        const submitBtn = document.getElementById('auth-submit');
-        const title = document.getElementById('auth-title');
-        const toggleText = document.getElementById('toggle-auth');
-        if (isSigningUp) {
-            submitBtn.textContent = "Sign up";
-            title.textContent = "Create a MantaMind Account";
-            toggleText.innerHTML = 'Already have an account? <a href="#" id="switch-mode">Login</a>';
-        } else {
-            submitBtn.textContent = "Login";
-            title.textContent = "Login to MantaMind";
-            toggleText.innerHTML = 'Don\'t have an account? <a href="#" id="switch-mode">Sign up</a>';
-        }
-        // Re-attach listener after innerHTML is changed
-        const newSwitch = document.getElementById('switch-mode');
-        if (newSwitch) {
-          newSwitch.addEventListener('click', (e) => {
-            e.preventDefault();
-            toggle(submitBtn.textContent === "Login");
-          });
-        }
-    };
-
-    if (switchLink) {
-      switchLink.addEventListener('click', (e) => {
+  const toggle = (isSigningUp) => {
+    const submitBtn = document.getElementById('auth-submit');
+    const title = document.getElementById('auth-title');
+    const toggleText = document.getElementById('toggle-auth');
+    if (isSigningUp) {
+      submitBtn.textContent = "Sign up";
+      title.textContent = "Create a MantaMind Account";
+      toggleText.innerHTML = 'Already have an account? <a href="#" id="switch-mode">Login</a>';
+    } else {
+      submitBtn.textContent = "Login";
+      title.textContent = "Login to MantaMind";
+      toggleText.innerHTML = 'Don\'t have an account? <a href="#" id="switch-mode">Sign up</a>';
+    }
+    const newSwitch = document.getElementById('switch-mode');
+    if (newSwitch) {
+      newSwitch.addEventListener('click', (e) => {
         e.preventDefault();
-        const submitBtn = document.getElementById('auth-submit');
         toggle(submitBtn.textContent === "Login");
       });
     }
+  };
 
-    authForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
-        const isSignup = document.getElementById('auth-submit').textContent === "Sign up";
-
-        if (!username || !password) {
-            showAuthFeedback("Please fill in both fields.");
-            return;
-        }
-
-        if (isSignup) {
-            if (userData[username]) {
-                showAuthFeedback("Username already taken.");
-            } else {
-                userData[username] = {
-                    password: password, // In a real app, hash this!
-                    learnedWords: [], inProgressWords: [], wordProgress: {},
-                    currentStreak: 0, bestStreak: 0
-                };
-                loginUser(username);
-            }
-        } else { // Login
-            if (!userData[username] || userData[username].password !== password) {
-                showAuthFeedback("Invalid username or password.");
-            } else {
-                loginUser(username);
-            }
-        }
+  if (switchLink) {
+    switchLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('auth-submit');
+      toggle(submitBtn.textContent === "Login");
     });
+  }
+
+  authForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const isSignup = document.getElementById('auth-submit').textContent === "Sign up";
+
+    if (!username || !password) {
+      showAuthFeedback("Please fill in both fields.");
+      return;
+    }
+
+    if (isSignup) {
+      if (userData[username]) {
+        showAuthFeedback("Username already taken.");
+      } else {
+        userData[username] = {
+          password: password,
+          learnedWords: [],
+          inProgressWords: [],
+          wordStreaks: {},
+          currentStreak: 0,
+          bestStreak: 0
+        };
+        loginUser(username);
+      }
+    } else {
+      if (!userData[username] || userData[username].password !== password) {
+        showAuthFeedback("Invalid username or password.");
+      } else {
+        loginUser(username);
+      }
+    }
+  });
 }
 
 function loginUser(username) {
-    currentUser = username;
-    localStorage.setItem('currentUser', currentUser);
-    localStorage.setItem('userData', JSON.stringify(userData));
-    window.location.href = 'index.html';
+  currentUser = username;
+  localStorage.setItem('currentUser', currentUser);
+  localStorage.setItem('userData', JSON.stringify(userData));
+  window.location.href = 'index.html';
 }
 
 function showAuthFeedback(msg) {
@@ -601,8 +640,6 @@ function endChallenge() {
   disableTypingChallenge();
 }
 
-
-
 function disableTypingChallenge() {
   const input = document.getElementById('type-input');
   const submit = document.getElementById('submit-type');
@@ -610,46 +647,143 @@ function disableTypingChallenge() {
   if (submit) submit.disabled = true;
 }
 
-/* 
-Note: functions referenced below like showMultipleChoiceDefinition, showMultipleChoiceWord, showFillInBlank,
-showTypingChallenge must exist elsewhere in your codebase. I intentionally didn't change them to avoid
-"crazy" edits. If they don't exist, you'll get reference errors — let me know and I can unify them with
-the existing loadTask/handleMultipleChoice implementation.
-*/
-
-function renderMultipleChoice(promptText, choices, correctAnswer, feedbackFormatter) {
-  document.getElementById('task-container').innerHTML = `
-    <p>${promptText}</p>
-    ${choices.map(choice => `<button class="choice-btn">${choice}</button>`).join('')}
-    <hr class="divider" />
-  `;
-
-  document.querySelectorAll('.choice-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const correct = btn.textContent === wordObj.word;
-    if (correct) {
-      document.getElementById('feedback').textContent = '✅ Correct!';
-      updateStreak(true);
-      disableMultipleChoice(); // Optional: disables buttons
-    } else {
-      document.getElementById('feedback').textContent = '❌ Try again.';
-      updateStreak(false);
-    }
-  });
-});
-
-}
-
-renderMultipleChoice(
-  `❓ Which word matches this definition: "<em>${wordObj.definition}</em>"`,
-  shuffledChoices,
-  wordObj.word,
-  correct => correct ? '✅ Correct!' : `❌ Incorrect. The correct word was "${wordObj.word}".`
-);
-
 function disableMultipleChoice() {
   document.querySelectorAll('.choice-btn').forEach(btn => {
     btn.disabled = true;
   });
-  document.getElementById('hint-btn').style.display = 'none';
+  const hintBtn = document.getElementById('hint-btn');
+  if (hintBtn) hintBtn.style.display = 'none';
 }
+
+function showMultipleChoiceDefinition(wordObj) {
+  loadTask('definition-match');
+}
+
+function showMultipleChoiceWord(wordObj) {
+  loadTask('definition-match');
+}
+
+function showFillInBlank(wordObj) {
+  loadTask('fill-blank');
+}
+
+function showTypingChallenge(wordObj) {
+  loadTask('fill-blank');
+}
+
+// --- Matching question type ---
+function showMatchingQuestion() {
+  const container = document.getElementById('task-container');
+  if (!container || !wordData || wordData.length === 0) return;
+
+  // Choose between 2 and up to 5 pairs depending on available words
+  const maxPairs = Math.min(5, wordData.length);
+  // choose a random count between 2 and maxPairs (inclusive)
+  const pairCount = 2 + Math.floor(Math.random() * Math.max(1, (maxPairs - 1)));
+
+  // Pick distinct random words
+  const pool = [...wordData];
+  shuffleArray(pool);
+  const pairs = pool.slice(0, pairCount).map(w => ({ word: w.word, definition: w.definition }));
+
+  // Prepare left (words) and right (definitions shuffled)
+  const left = pairs.map((p, i) => ({ text: p.word, idx: i }));
+  const right = pairs.map((p, i) => ({ text: p.definition, idx: i }));
+  shuffleArray(right);
+
+  // track pairs chosen by user: leftIdx -> rightIdx
+  const userPairs = {};
+  let selectedLeft = null;
+
+  container.innerHTML = `
+    <p>Match each word to its definition:</p>
+    <div class="matching-container">
+      <div class="matching-col left" id="matching-left"></div>
+      <div class="matching-col right" id="matching-right"></div>
+    </div>
+    <div style="margin-top:12px;"><button id="submit-matching">Submit Matches</button></div>
+    <div id="matching-feedback"></div>
+  `;
+
+  const leftEl = document.getElementById('matching-left');
+  const rightEl = document.getElementById('matching-right');
+
+  left.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'match-item left-item';
+    div.textContent = item.text;
+    div.dataset.idx = item.idx;
+    div.addEventListener('click', () => {
+      // select left item
+      document.querySelectorAll('.left-item').forEach(el => el.classList.remove('selected-left'));
+      div.classList.add('selected-left');
+      selectedLeft = parseInt(div.dataset.idx, 10);
+    });
+    leftEl.appendChild(div);
+  });
+
+  right.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'match-item right-item';
+    div.textContent = item.text;
+    div.dataset.idx = item.idx; // correct left idx
+    div.dataset.shownIdx = i; // its position
+    div.addEventListener('click', () => {
+      if (selectedLeft === null) return;
+      // pair selectedLeft -> this right idx
+      userPairs[selectedLeft] = parseInt(div.dataset.idx, 10);
+      // mark UI
+      document.querySelectorAll('.right-item').forEach(el => el.classList.remove('paired'));
+      document.querySelectorAll('.left-item').forEach(el => el.classList.remove('paired'));
+      // highlight pairs
+      const matchedRight = Array.from(document.querySelectorAll('.right-item')).find(r => parseInt(r.dataset.idx,10) === userPairs[selectedLeft]);
+      const matchedLeft = Array.from(document.querySelectorAll('.left-item')).find(l => parseInt(l.dataset.idx,10) === selectedLeft);
+      if (matchedRight) matchedRight.classList.add('paired');
+      if (matchedLeft) matchedLeft.classList.add('paired');
+      selectedLeft = null;
+      document.querySelectorAll('.left-item').forEach(el => el.classList.remove('selected-left'));
+    });
+    rightEl.appendChild(div);
+  });
+
+  document.getElementById('submit-matching').addEventListener('click', () => {
+    const feedback = document.getElementById('matching-feedback');
+    const leftWords = left.map(l => l.text);
+    const correctPairs = {}; left.forEach((l,i) => { correctPairs[i] = i; });
+
+    // Check matches
+    let allMatched = true;
+    for (let i = 0; i < left.length; i++) {
+      if (userPairs[i] === undefined || userPairs[i] !== correctPairs[i]) {
+        allMatched = false;
+      }
+    }
+
+    if (allMatched) {
+      feedback.innerHTML = '<p class="feedback show correct">🎉 All matched correctly!</p>';
+      // award progress for each matched word
+      leftWords.forEach(w => updateProgress(true, w));
+      showFeedback(true);
+    } else {
+      feedback.innerHTML = '<p class="feedback show incorrect">Some matches are incorrect. See correct pairs below.</p>';
+      // For incorrect/partial, penalize any incorrect or missing match
+      for (let i = 0; i < left.length; i++) {
+        if (userPairs[i] === correctPairs[i]) {
+          updateProgress(true, leftWords[i]);
+        } else {
+          updateProgress(false, leftWords[i]);
+        }
+      }
+      // reveal correct answers
+      const reveal = document.createElement('div');
+      reveal.className = 'reveal-box';
+      reveal.innerHTML = '<h4>Correct Matches</h4>' + left.map((l,i) => `<p><strong>${l}</strong> → ${pairs[i].definition}</p>`).join('');
+      container.appendChild(reveal);
+      showFeedback(false);
+    }
+
+    const nextBtn = document.getElementById('next-task');
+    if (nextBtn) nextBtn.style.display = 'inline-block';
+  });
+}
+
